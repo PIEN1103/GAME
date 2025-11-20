@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>단어설명 퀴즈 (다인용)</title>
+<style>
+body {
+  font-family: "Pretendard", sans-serif;
+  background-color: #f8fafc;
+  color: #333;
+  text-align: center;
+  margin: 0;
+  padding: 20px;
+}
+h1 {
+  color: #0072e3;
+}
+button {
+  background-color: #0072e3;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  margin: 10px;
+  cursor: pointer;
+}
+button:hover {
+  background-color: #005bb5;
+}
+input, textarea {
+  width: 90%;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  margin: 8px 0;
+}
+#game, #explanationInput, #guessInput, #result, #endGame { display: none; }
+.timer { font-size: 1.5em; color: #d6336c; }
+.explanation-list {
+  background: #fff;
+  border-radius: 8px;
+  padding: 10px;
+  max-width: 400px;
+  margin: 0 auto;
+  text-align: left;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+</style>
+</head>
+<body>
+
+<h1>🎮 단어설명 퀴즈 (다인용)</h1>
+
+<div id="setup">
+  <p>플레이어 이름을 3~5명 입력해주세요.</p>
+  <div id="playerInputs"></div>
+  <button onclick="addPlayer()">+ 플레이어 추가</button>
+  <button onclick="startGame()">게임 시작</button>
+</div>
+
+<div id="game">
+  <h2 id="roundInfo"></h2>
+  <p id="wordDisplay" style="font-size:1.3em;"></p>
+  <p class="timer" id="timer"></p>
+  
+  <div id="explanationInput">
+    <p><strong id="currentPlayerName"></strong>님, 단어를 일본어로 설명해주세요!</p>
+    <textarea id="explanationText"></textarea><br>
+    <button onclick="submitExplanation()">설명 제출</button>
+  </div>
+
+  <div id="guessInput">
+    <h3>📝 설명 리스트</h3>
+    <div class="explanation-list" id="explanationList"></div>
+    <p>플레이어 <strong id="guesserName"></strong>님, 정답을 입력하세요 (15초 제한)</p>
+    <input type="text" id="guessAnswer" placeholder="정답 입력">
+    <button onclick="submitGuess()">정답 제출</button>
+  </div>
+
+  <div id="result">
+    <h3 id="resultText"></h3>
+    <button onclick="nextRound()">다음 라운드</button>
+  </div>
+</div>
+
+<div id="endGame">
+  <h2>🎉 게임 종료!</h2>
+  <div id="scoreBoard"></div>
+</div>
+
+<script>
+let players = [];
+let currentRound = 0;
+let currentWord = "";
+let explanations = {};
+let wordList = ["猫", "学校", "電車", "先生", "料理", "映画", "友達", "日本語", "勉強", "桜"];
+let timerInterval;
+let scores = {};
+
+function addPlayer() {
+  const div = document.createElement("div");
+  div.innerHTML = '<input class="player-input" type="text" placeholder="플레이어 이름">';
+  document.getElementById("playerInputs").appendChild(div);
+}
+
+function startGame() {
+  const inputs = document.querySelectorAll(".player-input");
+  players = Array.from(inputs).map(i => i.value.trim()).filter(v => v);
+  if (players.length < 3 || players.length > 5) {
+    alert("플레이어는 3~5명이어야 합니다!");
+    return;
+  }
+  players.forEach(p => scores[p] = 0);
+  document.getElementById("setup").style.display = "none";
+  document.getElementById("game").style.display = "block";
+  startRound();
+}
+
+function startRound() {
+  if (currentRound >= players.length) {
+    endGame();
+    return;
+  }
+  explanations = {};
+  currentWord = wordList[Math.floor(Math.random() * wordList.length)];
+  document.getElementById("roundInfo").innerText = `라운드 ${currentRound+1}: ${players[currentRound]}님이 정답자!`;
+  document.getElementById("wordDisplay").innerText = `단어: ${currentWord}`;
+  startExplanationPhase();
+}
+
+function startExplanationPhase() {
+  let i = 0;
+  let explainerList = players.filter(p => p !== players[currentRound]);
+  document.getElementById("explanationInput").style.display = "block";
+  document.getElementById("guessInput").style.display = "none";
+  document.getElementById("result").style.display = "none";
+  startTimer(60, () => {
+    if (Object.keys(explanations).length === 0) {
+      alert("제출된 설명이 없습니다. 자동으로 넘어갑니다.");
+    }
+    startGuessPhase();
+  });
+  nextExplainer(explainerList, i);
+}
+
+function nextExplainer(list, index) {
+  if (index >= list.length) return;
+  document.getElementById("currentPlayerName").innerText = list[index];
+  document.getElementById("explanationText").value = "";
+  document.getElementById("explanationText").focus();
+  document.querySelector("button[onclick='submitExplanation()']").onclick = () => {
+    const text = document.getElementById("explanationText").value.trim();
+    if (!text) return alert("설명을 입력해주세요!");
+    explanations[list[index]] = text;
+    nextExplainer(list, index + 1);
+  };
+}
+
+function startGuessPhase() {
+  document.getElementById("explanationInput").style.display = "none";
+  document.getElementById("guessInput").style.display = "block";
+  const guesser = players[currentRound];
+  document.getElementById("guesserName").innerText = guesser;
+  const listDiv = document.getElementById("explanationList");
+  listDiv.innerHTML = "";
+  for (const [player, exp] of Object.entries(explanations)) {
+    const p = document.createElement("p");
+    p.innerHTML = `<strong>${player}:</strong> ${exp}`;
+    listDiv.appendChild(p);
+  }
+  startTimer(15, () => submitGuess());
+}
+
+function startTimer(seconds, callback) {
+  clearInterval(timerInterval);
+  const timerEl = document.getElementById("timer");
+  timerEl.innerText = `${seconds}초`;
+  timerInterval = setInterval(() => {
+    seconds--;
+    timerEl.innerText = `${seconds}초`;
+    if (seconds <= 0) {
+      clearInterval(timerInterval);
+      callback();
+    }
+  }, 1000);
+}
+
+function submitExplanation() {}
+
+function submitGuess() {
+  clearInterval(timerInterval);
+  const guesser = players[currentRound];
+  const answer = document.getElementById("guessAnswer").value.trim();
+  document.getElementById("guessInput").style.display = "none";
+  document.getElementById("result").style.display = "block";
+  if (answer === currentWord) {
+    scores[guesser]++;
+    document.getElementById("resultText").innerText = `🎉 정답! (${answer})`;
+  } else {
+    document.getElementById("resultText").innerText = `❌ 오답! 정답은 '${currentWord}'`;
+  }
+}
+
+function nextRound() {
+  currentRound++;
+  startRound();
+}
+
+function endGame() {
+  document.getElementById("game").style.display = "none";
+  document.getElementById("endGame").style.display = "block";
+  let html = "<h3>최종 점수</h3><ul style='list-style:none'>";
+  Object.entries(scores).forEach(([p, s]) => {
+    html += `<li>${p}: ${s}점</li>`;
+  });
+  html += "</ul>";
+  document.getElementById("scoreBoard").innerHTML = html;
+}
+</script>
+</body>
+</html>
