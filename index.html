@@ -17,4 +17,422 @@
       padding-left: env(safe-area-inset-left);
       padding-right: env(safe-area-inset-right);
     }
-    .
+    .card {
+      max-width: 480px;
+      margin: 0 auto;
+      background: #ffffff;
+      padding: 16px;
+      border-radius: 12px;
+      box-shadow: 0 6px 18px rgba(15,23,42,0.08);
+    }
+    h1 {
+      font-size: 20px;
+      margin: 0 0 8px;
+      text-align: center;
+      color: #0ea5e9;
+    }
+    h2 {
+      font-size: 18px;
+      margin: 12px 0 8px;
+    }
+    .muted {
+      font-size: 13px;
+      color: #6b7280;
+    }
+    input, textarea, button {
+      width: 100%;
+      font-size: 16px;
+      padding: 10px 12px;
+      margin: 6px 0;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+    }
+    textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+    button {
+      background: #0ea5e9;
+      color: #ffffff;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+    #wordDisplay {
+      font-size: 6vw;
+      font-weight: 700;
+      margin: 12px 0;
+      text-align: center;
+    }
+    @media (min-width: 600px) {
+      #wordDisplay { font-size: 28px; }
+    }
+    .player-list, .score-list {
+      font-size: 14px;
+      text-align: left;
+      margin: 4px 0;
+    }
+    .player-list div, .score-list div {
+      padding: 2px 0;
+    }
+    #explanations {
+      text-align: left;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+    #explanations div {
+      padding: 4px 0;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      margin-left: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>단어 설명 퀴즈 (멀티)</h1>
+    <p class="muted" id="info">여러 기기에서 같은 페이지에 접속해 닉네임을 입력하고 참여하세요.</p>
+
+    <!-- 참여 -->
+    <div id="joinArea">
+      <h2>1. 참여하기</h2>
+      <input id="nameInput" placeholder="닉네임 입력" />
+      <button id="joinBtn">참여</button>
+    </div>
+
+    <!-- 대기실 -->
+    <div id="lobbyArea" style="display:none;">
+      <h2>2. 대기실</h2>
+      <div class="muted">현재 인원: <span id="playerCount">0</span>명 (최소 2명 필요)</div>
+      <div class="player-list" id="playerList"></div>
+      <button id="startBtn" disabled>게임 시작</button>
+    </div>
+
+    <!-- 게임 영역 -->
+    <div id="gameArea" style="display:none;">
+      <h2>게임 진행</h2>
+      <div class="muted" id="roleLabel"></div>
+
+      <div id="wordArea" style="margin-top:8px;">
+        <div class="muted">현재 단어</div>
+        <div id="wordDisplay">-</div>
+      </div>
+
+      <!-- 설명자 -->
+      <div id="explainArea" style="display:none;">
+        <div class="muted">설명자: 일본어로만 설명을 작성하세요.</div>
+        <textarea id="explainInput" placeholder="日本語で説明を書いてください"></textarea>
+        <button id="explainSubmitBtn">설명 제출</button>
+      </div>
+
+      <!-- 추측자 -->
+      <div id="guessArea" style="display:none;">
+        <div class="muted">추측자: 설명들을 보고 정답을 입력하세요.</div>
+        <div id="explanations"></div>
+        <input id="guessInput" placeholder="정답(한자 또는 ひらがな)" />
+        <button id="guessSubmitBtn">정답 제출</button>
+      </div>
+
+      <!-- 결과 -->
+      <div id="resultArea" style="display:none;">
+        <div id="resultText"></div>
+        <button id="nextRoundBtn">다음 라운드</button>
+      </div>
+
+      <h2>점수</h2>
+      <div class="score-list" id="scoreList"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import {
+      getDatabase,
+      ref,
+      set,
+      get,
+      push,
+      onValue,
+      update,
+      remove
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDCds-Q5QtuZ6ievJT0QwT2ZgCjwj-DmPc",
+      authDomain: "srrs-92986.firebaseapp.com",
+      databaseURL: "https://srrs-92986-default-rtdb.firebaseio.com/",
+      projectId: "srrs-92986",
+      storageBucket: "srrs-92986.firebasestorage.app",
+      messagingSenderId: "114988047572",
+      appId: "1:114988047572:web:c43c12be25f7035a116f41",
+      measurementId: "G-4Y1ME1SSS4"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const WORDS = [
+      { kanji: "朝", reading: "あさ", meaning: "아침" },
+      { kanji: "冒険", reading: "ぼうけん", meaning: "모험" },
+      { kanji: "友達", reading: "ともだち", meaning: "친구" },
+      { kanji: "留学生", reading: "りゅうがくせい", meaning: "유학생" },
+      { kanji: "図書館", reading: "としょかん", meaning: "도서관" },
+      { kanji: "先生", reading: "せんせい", meaning: "선생님" },
+      { kanji: "桜", reading: "さくら", meaning: "벚꽃" },
+      { kanji: "授業", reading: "じゅぎょう", meaning: "수업" },
+      { kanji: "試験", reading: "しけん", meaning: "시험" },
+      { kanji: "料理", reading: "りょうり", meaning: "요리" }
+    ];
+
+    function formatWord(w) {
+      return `${w.kanji}（${w.reading}）: ${w.meaning}`;
+    }
+
+    const joinArea = document.getElementById("joinArea");
+    const lobbyArea = document.getElementById("lobbyArea");
+    const gameArea = document.getElementById("gameArea");
+    const nameInput = document.getElementById("nameInput");
+    const joinBtn = document.getElementById("joinBtn");
+    const playerCountSpan = document.getElementById("playerCount");
+    const playerListDiv = document.getElementById("playerList");
+    const startBtn = document.getElementById("startBtn");
+    const roleLabel = document.getElementById("roleLabel");
+    const wordDisplay = document.getElementById("wordDisplay");
+    const explainArea = document.getElementById("explainArea");
+    const explainInput = document.getElementById("explainInput");
+    const explainSubmitBtn = document.getElementById("explainSubmitBtn");
+    const guessArea = document.getElementById("guessArea");
+    const explanationsDiv = document.getElementById("explanations");
+    const guessInput = document.getElementById("guessInput");
+    const guessSubmitBtn = document.getElementById("guessSubmitBtn");
+    const resultArea = document.getElementById("resultArea");
+    const resultText = document.getElementById("resultText");
+    const nextRoundBtn = document.getElementById("nextRoundBtn");
+    const scoreList = document.getElementById("scoreList");
+
+    let myKey = null;
+    let myName = "";
+    let currentGame = null;
+    let playersCache = {};
+
+    const playersRef = ref(db, "game/players");
+    const gameRef = ref(db, "game/state");
+    const explanationsRef = ref(db, "game/explanations");
+
+    joinBtn.addEventListener("click", async () => {
+      const name = nameInput.value.trim();
+      if (!name) {
+        alert("닉네임을 입력하세요.");
+        return;
+      }
+      myName = name;
+
+      const newRef = push(playersRef);
+      myKey = newRef.key;
+      await set(newRef, {
+        name: myName,
+        points: 0
+      });
+
+      joinArea.style.display = "none";
+      lobbyArea.style.display = "block";
+
+      window.addEventListener("beforeunload", () => {
+        if (myKey) {
+          remove(ref(db, `game/players/${myKey}`));
+        }
+      });
+    });
+
+    onValue(playersRef, (snap) => {
+      const val = snap.val() || {};
+      playersCache = val;
+      const keys = Object.keys(val);
+      const count = keys.length;
+      playerCountSpan.textContent = count;
+
+      playerListDiv.innerHTML = "";
+      scoreList.innerHTML = "";
+
+      keys.forEach((k, idx) => {
+        const p = val[k];
+        const you = k === myKey ? " (나)" : "";
+        const badge = (currentGame && currentGame.guesserKey === k)
+          ? "<span class='badge'>추측자</span>"
+          : "";
+        playerListDiv.innerHTML += `<div>${idx + 1}. ${p.name}${you} ${badge}</div>`;
+        scoreList.innerHTML += `<div>${p.name}${you} — ${p.points ?? 0}점</div>`;
+      });
+
+      startBtn.disabled = count < 2;
+
+      if (currentGame && currentGame.phase !== "waiting") {
+        lobbyArea.style.display = "none";
+        gameArea.style.display = "block";
+      }
+    });
+
+    onValue(gameRef, (snap) => {
+      currentGame = snap.val();
+      renderGameState();
+    });
+
+    onValue(explanationsRef, (snap) => {
+      const val = snap.val() || {};
+      explanationsDiv.innerHTML = "";
+      Object.entries(val).forEach(([k, v]) => {
+        const name = playersCache[k]?.name || "???";
+        explanationsDiv.innerHTML += `<div><strong>${name}</strong>: ${v.text}</div>`;
+      });
+    });
+
+    startBtn.addEventListener("click", async () => {
+      const snap = await get(playersRef);
+      const players = snap.val() || {};
+      const keys = Object.keys(players);
+      if (keys.length < 2) {
+        alert("최소 2명이 필요합니다.");
+        return;
+      }
+      await startNewRound(players, 0);
+    });
+
+    explainSubmitBtn.addEventListener("click", async () => {
+      const text = explainInput.value.trim();
+      if (!text) {
+        alert("설명을 작성하세요.");
+        return;
+      }
+      await set(ref(db, `game/explanations/${myKey}`), { text });
+      explainInput.value = "";
+      alert("설명 제출 완료!");
+    });
+
+    guessSubmitBtn.addEventListener("click", async () => {
+      if (!currentGame?.word) return;
+      const input = guessInput.value.trim();
+      if (!input) {
+        alert("정답을 입력하세요.");
+        return;
+      }
+
+      const w = currentGame.word;
+      const correct =
+        input === w.kanji ||
+        input === w.reading;
+
+      let msg = "";
+      if (correct) {
+        msg = `정답! (${w.kanji} / ${w.reading})`;
+        const myRef = ref(db, `game/players/${myKey}/points`);
+        const snap = await get(myRef);
+        const curr = snap.val() ?? 0;
+        await set(myRef, curr + 1);
+      } else {
+        msg = `오답! 정답은 ${w.kanji}（${w.reading}）입니다.`;
+      }
+
+      await update(gameRef, {
+        phase: "result",
+        lastResult: msg
+      });
+    });
+
+    nextRoundBtn.addEventListener("click", async () => {
+      const snap = await get(playersRef);
+      const players = snap.val() || {};
+      const keys = Object.keys(players);
+      if (keys.length < 2) {
+        alert("플레이어가 부족합니다.");
+        return;
+      }
+      const index = keys.indexOf(currentGame.guesserKey);
+      const next = (index + 1) % keys.length;
+      await startNewRound(players, next);
+    });
+
+    async function startNewRound(players, idx) {
+      const keys = Object.keys(players);
+      const guesser = keys[idx];
+      const word = WORDS[Math.floor(Math.random() * WORDS.length)];
+
+      await set(explanationsRef, {});
+      await set(gameRef, {
+        phase: "explaining",
+        round: currentGame?.round ? currentGame.round + 1 : 1,
+        word,
+        guesserKey: guesser
+      });
+    }
+
+    function renderGameState() {
+      if (!currentGame) return;
+
+      const phase = currentGame.phase;
+      const word = currentGame.word;
+      const guesser = currentGame.guesserKey;
+
+      if (phase === "waiting") {
+        lobbyArea.style.display = "block";
+        gameArea.style.display = "none";
+        return;
+      }
+
+      lobbyArea.style.display = "none";
+      gameArea.style.display = "block";
+
+      if (word) {
+        wordDisplay.textContent = formatWord(word);
+      } else {
+        wordDisplay.textContent = "-";
+      }
+
+      if (guesser === myKey) {
+        roleLabel.textContent = "👉 당신은 이번 라운드의 추측자입니다.";
+      } else {
+        roleLabel.textContent = "👉 당신은 설명자입니다.";
+      }
+
+      explainArea.style.display = "none";
+      guessArea.style.display = "none";
+      resultArea.style.display = "none";
+
+      if (phase === "explaining") {
+        if (guesser !== myKey) explainArea.style.display = "block";
+      }
+
+      if (phase === "guessing") {
+        if (guesser === myKey) guessArea.style.display = "block";
+      }
+
+      if (phase === "result") {
+        resultArea.style.display = "block";
+        resultText.textContent = currentGame.lastResult;
+      }
+    }
+
+    (async () => {
+      const snap = await get(gameRef);
+      if (!snap.exists()) {
+        await set(gameRef, {
+          phase: "waiting",
+          round: 0,
+          word: null,
+          guesserKey: null
+        });
+      }
+    })();
+  </script>
+</body>
+  </html>
