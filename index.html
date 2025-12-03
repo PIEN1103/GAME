@@ -2,72 +2,12 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>단어 설명 퀴즈</title>
+  <title>단어 설명 퀴즈 (멀티플레이)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
-    body { font-family: sans-serif; padding: 20px; margin:0; }
-    #wordDisplay { font-size: 6vw; margin: 20px 0; font-weight: bold; }
-
-    /* 전체 레이아웃 모바일 반응형 */
-    @media (min-width: 600px) {
-      #wordDisplay { font-size: 28px; }
-    }
-
-    button, input, textarea {
-      font-size: 18px;
-      padding: 12px;
-      width: 100%;
-      box-sizing: border-box;
-      border-radius: 10px;
-    }
-
-    /* 모바일 safe-area 대응 */
+    * { box-sizing: border-box; }
     body {
-      padding-top: env(safe-area-inset-top);
-      padding-bottom: env(safe-area-inset-bottom);
-      padding-left: env(safe-area-inset-left);
-      padding-right: env(safe-area-inset-right);
-    }
-
-    /* 모바일에서 입력창 키보드가 올라올 때 대비 */
-    input, textarea { max-width: 100%; }
-
-    /* 전체 정렬 */
-    .container {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-  </style>
-</head>
-<body>
-  <h1>단어 설명 퀴즈</h1>
-
-  <!-- 단어 표시 영역 -->
-  <div id="wordDisplay">단어 로딩중...</div>
-
-  <script>
-    // ★ 단어 데이터 (한자 + 읽기 + 뜻)
-    const words = [
-      { kanji: "朝", reading: "あさ", meaning: "아침" },
-      { kanji: "冒険", reading: "ぼうけん", meaning: "모험" },
-      { kanji: "友達", reading: "ともだち", meaning: "친구" },
-      { kanji: "行方不明", reading: "ゆくえふめい", meaning: "행방불명" },
-      { kanji: "涙", reading: "なみだ", meaning: "눈물" }
-    ];
-
-    // ★ 단어 표시 형식: 한자（히라가나）: 뜻
-    function formatWord(word) {
-      return `${word.kanji}（${word.reading}）: ${word.meaning}`;
-    }
-
-    // ★ 화면에 표시
-    function showWord() {
-      const random = words[Math.floor(Math.random() * words.length)];
-      document.getElementById("wordDisplay").textContent = formatWord(random);
-    }
-
-    // 첫 단어 표시
-    showWord();
-  </script>
-</body>
-</html>
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 16px;
+      background: #f
