@@ -220,3 +220,53 @@ function endGame() {
 </script>
 </body>
 </html>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>멀티플레이 일본어 단어 설명 게임</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body { font-family: sans-serif; padding: 20px; }
+.hidden { display: none; }
+.box { border: 1px solid #ccc; padding: 15px; margin-top: 10px; border-radius: 10px; }
+</style>
+</head>
+<body>
+
+<h2>📘 일본어 단어 설명 게임 (멀티플레이)</h2>
+
+<div id="loginBox" class="box">
+  <h3>닉네임 입력</h3>
+  <input id="nickname" placeholder="닉네임 입력" />
+  <button onclick="joinGame()">입장하기</button>
+</div>
+
+<div id="waitingRoom" class="box hidden">
+  <h3>대기실</h3>
+  <p>참가자 수: <span id="playerCount">0</span>/3</p>
+  <div id="playerList"></div>
+  <p>3명 이상 모이면 자동으로 게임이 시작됩니다…</p>
+</div>
+
+<div id="gameBox" class="box hidden">
+  <h3 id="roleTitle"></h3>
+  <div id="wordBox" class="hidden">
+    <h3>제시어: <span id="wordText"></span></h3>
+  </div>
+
+  <div id="explainBox" class="hidden">
+    <h3>1분 동안 설명하기</h3>
+    <textarea id="explainInput" placeholder="일본어로 설명 작성"></textarea><br><br>
+    <button onclick="submitExplanation()">설명 제출</button>
+  </div>
+
+  <div id="answerBox" class="hidden">
+    <h3>설명들을 읽고 정답을 입력하세요</h3>
+    <div id="explainList"></div>
+    <input id="answerInput" placeholder="정답(일본어) 입력" />
+    <button onclick="submitAnswer()">정답 제출</button>
+  </div>
+
+  <p id="timer"></p>
+</div
