@@ -4,69 +4,70 @@
   <meta charset="UTF-8" />
   <title>단어 설명 퀴즈</title>
   <style>
-    body { font-family: sans-serif; text-align: center; padding: 20px; }
-    #status { font-size: 20px; margin-top: 20px; }
+    body { font-family: sans-serif; padding: 20px; margin:0; }
+    #wordDisplay { font-size: 6vw; margin: 20px 0; font-weight: bold; }
+
+    /* 전체 레이아웃 모바일 반응형 */
+    @media (min-width: 600px) {
+      #wordDisplay { font-size: 28px; }
+    }
+
+    button, input, textarea {
+      font-size: 18px;
+      padding: 12px;
+      width: 100%;
+      box-sizing: border-box;
+      border-radius: 10px;
+    }
+
+    /* 모바일 safe-area 대응 */
+    body {
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+    }
+
+    /* 모바일에서 입력창 키보드가 올라올 때 대비 */
+    input, textarea { max-width: 100%; }
+
+    /* 전체 정렬 */
+    .container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
   </style>
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, set, onValue, push } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyDCds-Q5QtuZ6ievJT0QwT2ZgCjwj-DmPc",
-      authDomain: "srrs-92986.firebaseapp.com",
-      databaseURL: "https://srrs-92986-default-rtdb.firebaseio.com/",
-      projectId: "srrs-92986",
-      storageBucket: "srrs-92986.firebasestorage.app",
-      messagingSenderId: "114988047572",
-      appId: "1:114988047572:web:c43c12be25f7035a116f41",
-      measurementId: "G-4Y1ME1SSS4"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-
-    // 플레이어 참여
-    function joinGame() {
-      const name = document.getElementById("nameInput").value.trim();
-      if (!name) return alert("닉네임을 입력하세요");
-
-      const playersRef = ref(db, "players/");
-      const newPlayerRef = push(playersRef);
-
-      set(newPlayerRef, {
-        name: name,
-        joinedAt: Date.now()
-      });
-
-      watchPlayerCount();
-      document.getElementById("joinBtn").disabled = true;
-    }
-
-    // 실시간 인원 표시 & 최소 2명에서 시작
-    function watchPlayerCount() {
-      const playersRef = ref(db, "players/");
-      onValue(playersRef, (snapshot) => {
-        const players = snapshot.val();
-        const count = players ? Object.keys(players).length : 0;
-
-        document.getElementById("status").innerText = `현재 인원: ${count}명 / 최소 2명`;
-
-        if (count >= 2) startGame();
-      });
-    }
-
-    function startGame() {
-      document.getElementById("status").innerText = "게임 시작!";
-    }
-
-    window.joinGame = joinGame;
-  </script>
 </head>
 <body>
   <h1>단어 설명 퀴즈</h1>
-  <input id="nameInput" placeholder="닉네임 입력" />
-  <button id="joinBtn" onclick="joinGame()">참여</button>
 
-  <div id="status">현재 인원: 0명 / 최소 2명</div>
+  <!-- 단어 표시 영역 -->
+  <div id="wordDisplay">단어 로딩중...</div>
+
+  <script>
+    // ★ 단어 데이터 (한자 + 읽기 + 뜻)
+    const words = [
+      { kanji: "朝", reading: "あさ", meaning: "아침" },
+      { kanji: "冒険", reading: "ぼうけん", meaning: "모험" },
+      { kanji: "友達", reading: "ともだち", meaning: "친구" },
+      { kanji: "行方不明", reading: "ゆくえふめい", meaning: "행방불명" },
+      { kanji: "涙", reading: "なみだ", meaning: "눈물" }
+    ];
+
+    // ★ 단어 표시 형식: 한자（히라가나）: 뜻
+    function formatWord(word) {
+      return `${word.kanji}（${word.reading}）: ${word.meaning}`;
+    }
+
+    // ★ 화면에 표시
+    function showWord() {
+      const random = words[Math.floor(Math.random() * words.length)];
+      document.getElementById("wordDisplay").textContent = formatWord(random);
+    }
+
+    // 첫 단어 표시
+    showWord();
+  </script>
 </body>
 </html>
